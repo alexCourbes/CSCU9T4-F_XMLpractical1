@@ -1,4 +1,5 @@
 import java.io.*;               // import input-output
+import java.sql.SQLOutput;
 
 import javax.xml.XMLConstants;
 import javax.xml.parsers.*;         // import parsers
@@ -9,6 +10,7 @@ import javax.xml.transform.*;       // import DOM source classes
 
 //import com.sun.xml.internal.bind.marshaller.NioEscapeHandler;
 import org.w3c.dom.*;               // import DOM
+import org.w3c.dom.ls.LSOutput;
 
 /**
   DOM handler to read XML information, to create this, and to print it.
@@ -40,8 +42,13 @@ public class DOMMenu {
   public static void main(String[] args)  {
     // load XML file into "document"
     loadDocument(args[0]);
+    if (validateDocument("small_menu.xsd")) {
+      printNodes();
+
+    }
+
     // print staff.xml using DOM methods and XPath queries
-    printNodes();
+
   
    
   }
@@ -56,7 +63,7 @@ public class DOMMenu {
       // create a document builder
       DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
       builder = builderFactory.newDocumentBuilder();
-
+      builder.isNamespaceAware();
       // create an XPath expression
       XPathFactory xpathFactory = XPathFactory.newInstance();
       path = xpathFactory.newXPath();
@@ -64,10 +71,11 @@ public class DOMMenu {
       // parse the document for later searching
       document = builder.parse(new File(filename));
     }
-    catch (Exception exception) {
-      System.err.println("could not load document " + exception);
+    catch (Exception e) {
+     System.err.println("could not load:" + e.getMessage());
     }
   }
+
 
   /*-------------------------- DOM and XPath Methods -------------------------*/
   /**
@@ -77,14 +85,16 @@ public class DOMMenu {
   private static Boolean validateDocument(String filename)  {
     try {
       String language = XMLConstants.W3C_XML_SCHEMA_NS_URI;
-      SchemaFactory factory = SchemaFactory.newInstance(language);
+      SchemaFactory factory = SchemaFactory.newInstance(language); //loading the xsd
       schema = factory.newSchema(new File(filename));
       Validator validator = schema.newValidator();
-      validator.validate(new DOMSource(document));
+      document=builder.parse(new File("small_menu.xml"));
+      validator.validate(new DOMSource(document.getDocumentElement())); // validate the xml document with the xsd
+
       return true;
     } catch (Exception e){
-      System.err.println(e);
-      System.err.println("Could not load schema or validate");
+
+      System.err.println("Could not validate");
       return false;
     }
   }
@@ -92,12 +102,31 @@ public class DOMMenu {
     Print nodes using DOM methods and XPath queries.
   */
   private static void printNodes() {
-    Node menuItem_1 = document.getFirstChild();
-    Node menuItem_2 = menuItem_1.getFirstChild().getNextSibling();
-    System.out.println("First child is: " + menuItem_1.getNodeName());
-    System.out.println("  Child is: " + menuItem_2.getNodeName());
 
-  }
+    System.out.println("Root element:"+ document.getDocumentElement().getNodeName());
+
+    NodeList itemsList = document.getElementsByTagName("item");
+    System.out.println("\ntype: " + itemsList.item(0).getNodeName());
+    for (int i=0 ; i<itemsList.getLength();i++) {
+      Node menuItem = itemsList.item(i);
+
+
+      if (menuItem.getNodeType() == Node.ELEMENT_NODE) {
+        Element element = (Element) menuItem;
+
+        System.out.println("\nname: " + element.getElementsByTagName("name").item(0).getTextContent());
+        System.out.println("Price: " + element.getElementsByTagName("price").item(0).getTextContent());
+        System.out.println("Calories: " + element.getElementsByTagName("description").item(0).getTextContent());
+
+      }
+    }
+    }
+
+
+
+
+
+
 
   /**
     Get result of XPath query.
